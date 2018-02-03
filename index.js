@@ -3,7 +3,7 @@ const MongoClient = require('mongodb').MongoClient;
 const assert = require('assert');
 
 // My own libraries
-
+const api = require('./lib/api');
 
 // Constants
 const MONGODB_SERVER = 'mongodb://localhost:27017';

@@ -6,9 +6,11 @@
   "author": "Julius Putra Tanu Setiaji <indocomsoft@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "dotenv": "^5.0.0",
     "mongodb": "^3.0.2",
     "node-telegram-bot-api": "^0.30.0",
-    "request": "^2.83.0"
+    "request": "^2.83.0",
+    "request-promise": "^4.2.2"
   },
   "devDependencies": {
     "eslint": "^4.16.0",
