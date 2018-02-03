@@ -7,8 +7,7 @@ const dotenv = require('dotenv');
 dotenv.load();
 
 // Constants
-const { TOKEN } = process.env;
-const { API_KEY } = process.env;
+const { TOKEN, API_KEY, URL_CALLBACK } = process.env;
 const MONGODB_SERVER = 'mongodb://localhost:27017';
 const DB_NAME = 'NUSIVLEBot';
 const bot = new TelegramBot(TOKEN, { polling: true });
@@ -43,7 +42,7 @@ function start(msg) {
         parse_mode: 'Markdown',
         reply_markup: {
           inline_keyboard: [
-            [{ text: 'Get IVLE Token', url: 'https://ivle.nus.edu.sg/api/login/?apikey=K3dOV891qtKhjZFwdKQnd&url=https://indocomsoft.com/NUSIVLEBot/' }],
+            [{ text: 'Get IVLE Token', url: `https://ivle.nus.edu.sg/api/login/?apikey=${API_KEY}&url=${URL_CALLBACK}` }],
           ],
         },
       },
