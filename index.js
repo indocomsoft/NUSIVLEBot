@@ -28,8 +28,8 @@ MongoClient.connect(MONGODB_SERVER, (err, client) => {
   chatId = db.collection('chatId');
   chatId.createIndex({ id: 1 }, { unique: true });
   chatId.find({}).toArray().then((r) => {
-    r.forEach((id) => {
-      bot.sendMessage(id, 'Bot has been restarted. Please re-run "push on" if you had push notifications on previously.');
+    r.forEach((msg) => {
+      bot.sendMessage(msg.id, 'Bot has been restarted. Please re-run "push on" if you had push notifications on previously.');
     })
   });
 });
