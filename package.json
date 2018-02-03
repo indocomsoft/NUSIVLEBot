@@ -5,6 +5,9 @@
   "repository": "git@github.com:indocomsoft/NUSIVLEBot.git",
   "author": "Julius Putra Tanu Setiaji <indocomsoft@gmail.com>",
   "license": "MIT",
+  "scripts": {
+    "start": "node index.js"
+  },
   "dependencies": {
     "dotenv": "^5.0.0",
     "mongodb": "^3.0.2",
