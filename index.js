@@ -46,43 +46,53 @@ function start(msg) {
   };
 }
 
-function fetchAnnouncements(msg, modules) {
+function fetchAnnouncements(msg, modules, force = false) {
   return chatId.findOne({ id: msg.chat.id }).then((r) => {
-    let stored_a = r.announcements;
-    if (stored_a === undefined) {
-      stored_a = [];
+    let storedA = r.announcements;
+    if (storedA === undefined) {
+      storedA = [];
     }
     const announcements = [];
     let tmp = api.do('Announcements', { Duration: 0, CourseId: modules[0].ID });
     for (let i = 1; i < modules.length; i += 1) {
-      tmp = tmp.then((r) => {
-        announcements[i - 1] = r.Results;
+      tmp = tmp.then((rr) => {
+        announcements[i - 1] = rr.Results;
         return api.do('Announcements', { Duration: 0, CourseId: modules[i].ID });
       });
     }
-    return tmp.then((r) => {
-      announcements[modules.length - 1] = r.Results;
+    return tmp.then((rr) => {
+      announcements[modules.length - 1] = rr.Results;
       console.log(announcements);
       announcements.forEach((a, i) => {
-        let reply = '';  
+        let reply = '';
         a.forEach((aa) => {
-          if (stored_a[i] == undefined) {
-            stored_a[i] = [];
+          if (storedA[i] === undefined) {
+            storedA[i] = [];
           }
-          if (stored_a[i].filter(aaa => aaa.ID === aa.ID).length === 0) {
+          if (storedA[i].filter(aaa => aaa.ID === aa.ID).length === 0) {
             reply += `- ${aa.Title}\n`;
-            stored_a[i].push({ ID: aa.ID });
+            storedA[i].push({ ID: aa.ID });
           }
         });
+        if (force) {
+          if (reply === '') {
+            reply += 'No new announcement';
+            bot.sendMessage(
+              msg.chat.id,
+              `**${modules[i].CourseCode}: ${modules[i].CourseName}**\n\n${reply}`,
+              { parse_mode: 'Markdown' },
+            )
+          }
+        }
         if (reply !== '') {
           bot.sendMessage(
             msg.chat.id,
             `**${modules[i].CourseCode}: ${modules[i].CourseName}**\n\n${reply}`,
-            { parse_mode: "Markdown" }
+            { parse_mode: 'Markdown' },
           );
         }
       });
-      chatId.updateOne({ id: msg.chat.id }, { $set: { announcements: stored_a } });
+      chatId.updateOne({ id: msg.chat.id }, { $set: { announcements: storedA } });
     });
   });
 }
@@ -155,7 +165,7 @@ bot.on('message', (msg) => {
       break;
     case '/announcements':
       ready.then(() => {
-        fetchAnnouncements(msg, modules);
+        fetchAnnouncements(msg, modules, true);
       });
       break;
     case '/push':
