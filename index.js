@@ -157,7 +157,7 @@ bot.on('message', (msg) => {
           return chatId.update({ id: msg.chat.id }, { $set: { modules: result } });
         });
       }).then(() => {
-        bot.sendMessage(msg.chat.id, 'Modules set up. Please run /push <on|off> <interval in seconds>');
+        bot.sendMessage(msg.chat.id, 'Modules set up. Please run /push <on|off>');
       }).catch(() => {
         bot.sendMessage(msg.chat.id, 'Failed to setup, please run /setup again');
       });
@@ -169,7 +169,8 @@ bot.on('message', (msg) => {
       break;
     case '/push':
       ready.then(() => {
-        const [status, interval] = args.split(' ');
+        const status = args.split(' ')[0];
+        const interval = 60;
         if (status === 'on') {
           chatId.findOne({ id: msg.chat.id }).then((r) => {
             if (!r.push) {
@@ -184,6 +185,8 @@ bot.on('message', (msg) => {
               };
               setTimeout(recur, parseInt(interval, 10) * 1000);
               bot.sendMessage(msg.chat.id, `Set up announcements check every ${interval} seconds`);
+            } else {
+              bot.sendMessage(msg.chat.id, 'Push notification is already on');
             }
           });
         } else {
@@ -193,7 +196,7 @@ bot.on('message', (msg) => {
       });
       break;
     case '/help':
-      bot.sendMessage(msg.chat.id, 'Run /push <on|off> <interval in seconds>');
+      bot.sendMessage(msg.chat.id, 'Run /push <on|off>');
       break;
     case '/token':
       break;
