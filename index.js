@@ -81,10 +81,9 @@ function fetchAnnouncements(msg, modules, force = false) {
               msg.chat.id,
               `**${modules[i].CourseCode}: ${modules[i].CourseName}**\n\n${reply}`,
               { parse_mode: 'Markdown' },
-            )
+            );
           }
-        }
-        if (reply !== '') {
+        } else if (reply !== '') {
           bot.sendMessage(
             msg.chat.id,
             `**${modules[i].CourseCode}: ${modules[i].CourseName}**\n\n${reply}`,
