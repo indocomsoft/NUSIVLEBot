@@ -1,6 +1,5 @@
 // 3rd party libraries
 const { MongoClient } = require('mongodb');
-const assert = require('assert');
 const TelegramBot = require('node-telegram-bot-api');
 const dotenv = require('dotenv');
 
@@ -87,8 +86,7 @@ function recur(msg, modules, api) {
   };
 }
 
-MongoClient.connect(MONGODB_SERVER, (err, client) => {
-  assert.equal(null, err);
+MongoClient.connect(MONGODB_SERVER).then((client) => {
   console.log('Connected successfully to server');
   db = client.db(DB_NAME);
   chatId = db.collection('chatId');
@@ -103,6 +101,10 @@ MongoClient.connect(MONGODB_SERVER, (err, client) => {
       });
     });
   }).catch(() => {});
+}).catch((err) => {
+  console.log(err);
+  console.log('Unable to connect to server');
+  process.exit(1);
 });
 
 function start(msg) {
