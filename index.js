@@ -7,7 +7,9 @@ const dotenv = require('dotenv');
 dotenv.load();
 
 // Constants
-const { TOKEN, API_KEY, URL_CALLBACK } = process.env;
+const {
+  TOKEN, API_KEY, URL_CALLBACK, INTERVAL,
+} = process.env;
 const MONGODB_SERVER = 'mongodb://localhost:27017';
 const DB_NAME = 'NUSIVLEBot';
 const bot = new TelegramBot(TOKEN, { polling: true });
@@ -17,41 +19,15 @@ let chatId;
 // My own libraries
 const API = require('./lib/api');
 
-const api = new API(API_KEY);
-
-
-MongoClient.connect(MONGODB_SERVER, (err, client) => {
-  assert.equal(null, err);
-  console.log('Connected successfully to server');
-  db = client.db(DB_NAME);
-  chatId = db.collection('chatId');
-  chatId.createIndex({ id: 1 }, { unique: true });
-  chatId.find({}).toArray().then((r) => {
-    r.forEach((msg) => {
-      bot.sendMessage(msg.id, 'Bot has been restarted. Please re-run "/push on" if you had push notifications on previously.');
-      chatId.updateOne({ id: msg.id }, { $set: { push: false } });
-    });
+function createApi(id, token) {
+  const api = new API(API_KEY);
+  return api.validateToken(token).then((response) => {
+    chatId.updateOne({ id }, { $set: { ivle_token: response.Token } });
+    return new Promise(resolve => resolve(api));
   });
-});
-
-function start(msg) {
-  return () => {
-    bot.sendMessage(
-      msg.chat.id, `Hi ${msg.chat.first_name}! Let's get you set up!`,
-      {
-        parse_mode: 'Markdown',
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: 'Get IVLE Token', url: `https://ivle.nus.edu.sg/api/login/?apikey=${API_KEY}&url=${URL_CALLBACK}` }],
-          ],
-        },
-      },
-    );
-    chatId.insert({ id: msg.chat.id, ivle_token: 'ask' });
-  };
 }
 
-function fetchAnnouncements(msg, modules, force = false) {
+function fetchAnnouncements(msg, modules, api, force = false) {
   return chatId.findOne({ id: msg.chat.id }).then((r) => {
     let storedA = r.announcements;
     if (storedA === undefined) {
@@ -63,11 +39,10 @@ function fetchAnnouncements(msg, modules, force = false) {
       tmp = tmp.then((rr) => {
         announcements[i - 1] = rr.Results;
         return api.do('Announcements', { Duration: 0, CourseId: modules[i].ID });
-      });
+      }).catch(() => {});
     }
     return tmp.then((rr) => {
       announcements[modules.length - 1] = rr.Results;
-      console.log(announcements);
       announcements.forEach((a, i) => {
         let reply = '';
         a.forEach((aa) => {
@@ -97,12 +72,57 @@ function fetchAnnouncements(msg, modules, force = false) {
         }
       });
       chatId.updateOne({ id: msg.chat.id }, { $set: { announcements: storedA } });
-    });
-  });
+    }).catch(() => {});
+  }).catch(() => {});
 }
 
+function recur(msg, modules, api) {
+  return () => {
+    chatId.findOne({ id: msg.chat.id }).then((rr) => {
+      if (rr.push) {
+        fetchAnnouncements(msg, modules, api);
+        setTimeout(recur(msg, modules, api), parseInt(INTERVAL, 10) * 1000);
+      }
+    }).catch(() => {});
+  };
+}
+
+MongoClient.connect(MONGODB_SERVER, (err, client) => {
+  assert.equal(null, err);
+  console.log('Connected successfully to server');
+  db = client.db(DB_NAME);
+  chatId = db.collection('chatId');
+  chatId.createIndex({ id: 1 }, { unique: true });
+  chatId.find({}).toArray().then((r) => {
+    r.filter(a => a.push === true).forEach((msg) => {
+      createApi(msg.id, msg.ivle_token).then((api) => {
+        setTimeout(
+          recur({ chat: { id: msg.id } }, msg.modules, api),
+          parseInt(INTERVAL, 10) * 1000,
+        );
+      });
+    });
+  }).catch(() => {});
+});
+
+function start(msg) {
+  bot.sendMessage(
+    msg.chat.id, `Hi ${msg.chat.first_name}! Let's get you set up!`,
+    {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: 'Get IVLE Token', url: `https://ivle.nus.edu.sg/api/login/?apikey=${API_KEY}&url=${URL_CALLBACK}` }],
+        ],
+      },
+    },
+  );
+  chatId.insert({ id: msg.chat.id, ivle_token: 'ask', chat: msg.chat });
+  return new Promise((resolve, reject) => reject());
+}
+
+
 bot.on('message', (msg) => {
-  console.log(msg);
   const command = msg.text.split(' ')[0];
   const args = msg.text.substr(command.length + 1);
   let ready;
@@ -110,86 +130,71 @@ bot.on('message', (msg) => {
 
   if (command !== '/delete') {
     ready = chatId.findOne({ id: msg.chat.id }).then((r) => {
-      if (r.ivle_token === 'ask' && command === '/token') {
-        return api.validateToken(args).then((response) => {
-          chatId.updateOne({ id: msg.chat.id }, { $set: { ivle_token: response.Token } });
-          bot.sendMessage(msg.chat.id, 'Token saved! Please run /setup to update your modules.');
-        }).catch(() => {
+      if (command === '/token') {
+        return createApi(msg.chat.id, args).catch(() => {
           bot.sendMessage(msg.chat.id, 'Invalid token. Please try again.');
-          start(msg)();
+          return start(msg);
+        }).then(() => {
+          bot.sendMessage(msg.chat.id, 'Token saved! Please run /setup to update your modules.');
+          return new Promise((resolve, reject) => reject(new Error('setup')));
         });
       } else if (r.ivle_token === 'ask') {
-        return start(msg)();
+        return start(msg);
       }
-      return api.validateToken(r.ivle_token).then((response) => {
-        if (r.ivle_token !== response.Token) {
-          chatId.updateOne({ id: msg.chat.id }, { $set: { ivle_token: response.Token } });
-        }
-        ({ modules } = r);
-        console.log(r.modules);
-        return response;
-      }).catch(() => {
+      ({ modules } = r);
+      return createApi(msg.chat.id, r.ivle_token).catch(() => {
         bot.sendMessage(msg.chat.id, 'Token has expired.');
-        return start(msg)();
+        return start(msg);
       });
-    }).catch(start(msg));
+    }).catch((err) => {
+      if (err.message === 'setup') {
+        return new Promise((resolve, reject) => reject(new Error('setup')));
+      }
+      return start(msg);
+    });
+  } else {
+    return chatId.deleteOne({ id: msg.chat.id }).then(() => {
+      bot.sendMessage(msg.chat.id, 'Your profile has been deleted.');
+    }).catch(() => {
+      bot.sendMessage(msg.chat.id, 'Failed to delete your profile. Please try again.');
+    });
   }
-
-  switch (command) {
-    case '/delete':
-      chatId.deleteOne({ id: msg.chat.id }).then(() => {
-        bot.sendMessage(msg.chat.id, 'Your profile has been deleted.');
-      }).catch(() => {
-        bot.sendMessage(msg.chat.id, 'Failed to delete your profile. Please try again.');
-      });
-      break;
-    case '/mods':
-      ready.then(() => {
+  return ready.then((api) => {
+    switch (command) {
+      case '/delete':
+        break;
+      case '/mods': {
         let reply = '';
         try {
           modules.forEach((mod) => { reply = `${reply}\n- ${mod.CourseCode}: ${mod.CourseName}`; });
         } catch (e) {
           return bot.sendMessage(msg.chat.id, 'Please run /setup first');
         }
-        return bot.sendMessage(msg.chat.id, reply, { parse_mode: 'Markdown' });
-      });
-      break;
-    case '/setup':
-      ready.then(() => {
+        bot.sendMessage(msg.chat.id, reply, { parse_mode: 'Markdown' });
+        break;
+      }
+      case '/setup':
         api.do('Modules').then((response) => {
           const result = response.Results.filter(mod => mod.isActive === 'Y')
             .map(mod => ({ ID: mod.ID, CourseCode: mod.CourseCode, CourseName: mod.CourseName }));
           return chatId.update({ id: msg.chat.id }, { $set: { modules: result } });
+        }).then(() => {
+          bot.sendMessage(msg.chat.id, 'Modules set up. Please run /push <on|off>');
+        }).catch(() => {
+          bot.sendMessage(msg.chat.id, 'Failed to setup, please run /setup again');
         });
-      }).then(() => {
-        bot.sendMessage(msg.chat.id, 'Modules set up. Please run /push <on|off>');
-      }).catch(() => {
-        bot.sendMessage(msg.chat.id, 'Failed to setup, please run /setup again');
-      });
-      break;
-    case '/announcements':
-      ready.then(() => {
-        fetchAnnouncements(msg, modules, true);
-      });
-      break;
-    case '/push':
-      ready.then(() => {
+        break;
+      case '/announcements':
+        fetchAnnouncements(msg, modules, api, true);
+        break;
+      case '/push': {
         const status = args.split(' ')[0];
-        const interval = 60;
         if (status === 'on') {
           chatId.findOne({ id: msg.chat.id }).then((r) => {
             if (!r.push) {
               chatId.updateOne({ id: msg.chat.id }, { $set: { push: true } });
-              const recur = () => {
-                chatId.findOne({ id: msg.chat.id }).then((rr) => {
-                  if (rr.push) {
-                    fetchAnnouncements(msg, modules);
-                    setTimeout(recur, parseInt(interval, 10) * 1000);
-                  }
-                });
-              };
-              setTimeout(recur, parseInt(interval, 10) * 1000);
-              bot.sendMessage(msg.chat.id, `Set up announcements check every ${interval} seconds`);
+              setTimeout(recur(msg, modules, api), parseInt(INTERVAL, 10) * 1000);
+              bot.sendMessage(msg.chat.id, `Set up announcements check every ${INTERVAL} seconds`);
             } else {
               bot.sendMessage(msg.chat.id, 'Push notification is already on');
             }
@@ -198,16 +203,18 @@ bot.on('message', (msg) => {
           chatId.updateOne({ id: msg.chat.id }, { $set: { push: false } });
           bot.sendMessage(msg.chat.id, 'Turned off push notification');
         }
-      });
-      break;
-    case '/help':
-      bot.sendMessage(msg.chat.id, 'Run /push <on|off>');
-      break;
-    case '/token':
-      break;
-    case '/start':
-      break;
-    default:
-      break;
-  }
+        break;
+      }
+      case '/help':
+        bot.sendMessage(msg.chat.id, 'Run /push <on|off>');
+        break;
+      case '/token':
+        break;
+      case '/start':
+        break;
+      default:
+        break;
+    }
+    return false;
+  });
 });
