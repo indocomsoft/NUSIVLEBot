@@ -7,11 +7,11 @@ dotenv.load();
 
 // Constants
 const {
-  TOKEN, API_KEY, URL_CALLBACK, INTERVAL,
+  TOKEN, API_KEY, URL_CALLBACK, INTERVAL, SEND_RESTART_MSG
 } = process.env;
 const MONGODB_SERVER = 'mongodb://localhost:27017';
 const DB_NAME = 'NUSIVLEBot';
-let bot;
+const bot = new TelegramBot(TOKEN, { polling: true });
 let db;
 let chatId;
 
@@ -59,13 +59,13 @@ function fetchAnnouncements(msg, modules, api, force = false) {
           }
           bot.sendMessage(
             msg.chat.id,
-            `**${modules[i].CourseCode}: ${modules[i].CourseName}**\n\n${reply}`,
+            `*${modules[i].CourseCode}: ${modules[i].CourseName}*\n\n${reply}`,
             { parse_mode: 'Markdown' },
           );
         } else if (reply !== '') {
           bot.sendMessage(
             msg.chat.id,
-            `**${modules[i].CourseCode}: ${modules[i].CourseName}**\n\n${reply}`,
+            `*${modules[i].CourseCode}: ${modules[i].CourseName}*\n\n${reply}`,
             { parse_mode: 'Markdown' },
           );
         }
@@ -109,13 +109,22 @@ MongoClient.connect(MONGODB_SERVER).then((client) => {
   chatId = db.collection('chatId');
   chatId.createIndex({ id: 1 }, { unique: true });
   chatId.find({}).toArray().then((r) => {
-    r.filter(a => a.push === true).forEach((msg) => {
-      createApi(msg.id, msg.ivle_token).then((api) => {
-        setTimeout(
-          recur({ chat: { id: msg.id } }, msg.modules, api),
-          parseInt(INTERVAL, 10) * 1000,
-        );
-      });
+    r.forEach((msg) => {
+      if (msg.push === true) {
+        createApi(msg.id, msg.ivle_token).then((api) => {
+          setTimeout(
+            recur({ chat: { id: msg.id } }, msg.modules, api),
+            parseInt(INTERVAL, 10) * 1000,
+          );
+        });
+      }
+      console.log(`Restoring state for ${msg.id}`);
+      if (SEND_RESTART_MSG == 1) {
+        bot.sendMessage(msg.id, 'Server has been restarted.\n\nWe restored ' +
+        `your setting of push notification to *${msg.push === true ? 'on' : 'off'}*.\n\n` +
+        'In case that didn\'t work, try doing `/push off` or `/push on` manually.',
+        { parse_mode: 'Markdown' });
+      }
     });
   }).catch(() => {});
 }).catch((err) => {
@@ -123,13 +132,11 @@ MongoClient.connect(MONGODB_SERVER).then((client) => {
   console.log('Unable to connect to server');
   process.exit(1);
 }).then(() => {
-  bot = new TelegramBot(TOKEN, { polling: true });
   bot.on('message', (msg) => {
     const command = msg.text.split(' ')[0];
     const args = msg.text.substr(command.length + 1);
     let ready;
     let modules;
-
     if (command !== '/delete') {
       ready = chatId.findOne({ id: msg.chat.id }).then((r) => {
         if (command === '/token') {
@@ -162,6 +169,7 @@ MongoClient.connect(MONGODB_SERVER).then((client) => {
       });
     }
     return ready.then((api) => {
+      chatId.updateOne({ id: msg.chat.id }, { $set: { chat: msg.chat } });
       switch (command) {
         case '/delete':
           break;
