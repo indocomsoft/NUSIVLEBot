@@ -56,12 +56,12 @@ function fetchAnnouncements(msg, modules, api, force = false) {
         if (force) {
           if (reply === '') {
             reply += 'No new announcement';
-            bot.sendMessage(
-              msg.chat.id,
-              `**${modules[i].CourseCode}: ${modules[i].CourseName}**\n\n${reply}`,
-              { parse_mode: 'Markdown' },
-            );
           }
+          bot.sendMessage(
+            msg.chat.id,
+            `**${modules[i].CourseCode}: ${modules[i].CourseName}**\n\n${reply}`,
+            { parse_mode: 'Markdown' },
+          );
         } else if (reply !== '') {
           bot.sendMessage(
             msg.chat.id,
