@@ -7,7 +7,7 @@ dotenv.load();
 
 // Constants
 const {
-  TOKEN, API_KEY, URL_CALLBACK, INTERVAL, SEND_RESTART_MSG
+  TOKEN, API_KEY, URL_CALLBACK, INTERVAL, SEND_RESTART_MSG,
 } = process.env;
 const MONGODB_SERVER = 'mongodb://localhost:27017';
 const DB_NAME = 'NUSIVLEBot';
@@ -33,10 +33,12 @@ function fetchAnnouncements(msg, modules, api, force = false) {
       storedA = [];
     }
     const announcements = [];
-    let tmp = api.do('Announcements', { Duration: 0, CourseId: modules[0].ID });
-    for (let i = 1; i < modules.length; i += 1) {
+    let tmp = new Promise((resolve) => { resolve(); });
+    for (let i = 0; i < modules.length; i += 1) {
       tmp = tmp.then((rr) => {
-        announcements[i - 1] = rr.Results;
+        if (i > 0) {
+          announcements[i - 1] = rr.Results;
+        }
         return api.do('Announcements', { Duration: 0, CourseId: modules[i].ID });
       }).catch(() => {});
     }
@@ -119,11 +121,13 @@ MongoClient.connect(MONGODB_SERVER).then((client) => {
         });
       }
       console.log(`Restoring state for ${msg.id}`);
-      if (SEND_RESTART_MSG == 1) {
-        bot.sendMessage(msg.id, 'Server has been restarted.\n\nWe restored ' +
-        `your setting of push notification to *${msg.push === true ? 'on' : 'off'}*.\n\n` +
-        'In case that didn\'t work, try doing `/push off` or `/push on` manually.',
-        { parse_mode: 'Markdown' });
+      if (parseInt(SEND_RESTART_MSG, 10) === 1) {
+        bot.sendMessage(
+          msg.id, 'Server has been restarted.\n\nWe restored ' +
+          `your setting of push notification to *${msg.push === true ? 'on' : 'off'}*.\n\n` +
+          'In case that didn\'t work, try doing `/push off` or `/push on` manually.',
+          { parse_mode: 'Markdown' },
+        );
       }
     });
   }).catch(() => {});
