@@ -45,8 +45,10 @@ function fetchAnnouncements(msg, modules, api, force = false) {
     return tmp.then((rr) => {
       announcements[modules.length - 1] = rr.Results;
       announcements.forEach((a, i) => {
+        // Remove duplicate announcements
+        const uniqueA = a.filter((item, pos, self) => self.indexOf(item) === pos);
         let reply = '';
-        a.forEach((aa) => {
+        uniqueA.forEach((aa) => {
           if (storedA[i] === undefined) {
             storedA[i] = [];
           }
