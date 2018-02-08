@@ -132,7 +132,7 @@ MongoClient.connect(MONGODB_SERVER).then((client) => {
         );
       }
       // Issue #28 Apology
-      if (parseInt(process.env.ISSUE_28_APOLOGY, 10) === 1
+      if (parseInt(process.env.ISSUE_28_APOLOGY, 10) === 1 && msg.modules !== undefined
         && msg.modules.filter(a => a.ID === 'de2f7554-163a-45e3-8619-e5f67f843f9e').length > 0) {
         bot.sendMessage(msg.id, 'Apologies in case you received non-stop messages about Seminar 4.\n\n' +
           'There was a bug in the IVLE API for which I have implemented a workaround.');
