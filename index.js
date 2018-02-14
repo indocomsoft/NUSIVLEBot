@@ -54,6 +54,7 @@ function fetchAnnouncements(msg, modules, api, force = false) {
           }
           if (storedA[i].filter(aaa => aaa.ID === aa.ID).length === 0) {
             reply += `- ${aa.Title}\n`;
+            console.log(aa.ID);
             storedA[i].push({ ID: aa.ID });
           }
         });
