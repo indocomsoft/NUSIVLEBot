@@ -7,7 +7,7 @@ dotenv.load();
 
 // Constants
 const {
-  TOKEN, API_KEY, URL_CALLBACK, INTERVAL, SEND_RESTART_MSG,
+  TOKEN, API_KEY, URL_CALLBACK, INTERVAL, SEND_RESTART_MSG, SEND_NOTICE
 } = process.env;
 const MONGODB_SERVER = 'mongodb://localhost:27017';
 const DB_NAME = 'NUSIVLEBot';
@@ -54,7 +54,6 @@ function fetchAnnouncements(msg, modules, api, force = false) {
           }
           if (storedA[i].filter(aaa => aaa.ID === aa.ID).length === 0) {
             reply += `- ${aa.Title}\n`;
-            console.log(aa.ID);
             storedA[i].push({ ID: aa.ID });
           }
         });
@@ -131,6 +130,10 @@ MongoClient.connect(MONGODB_SERVER).then((client) => {
           'In case that didn\'t work, try doing `/push off` or `/push on` manually.',
           { parse_mode: 'Markdown' },
         );
+      }
+      if (parseInt(SEND_NOTICE, 10) === 1) { 
+        bot.sendMessage(msg.id, 'There has been some issues with the bot spamming repeated messages. ' +
+        'In case this happens to you, please do /delete and /start to re-setup all over');
       }
       // Issue #28 Apology
       if (parseInt(process.env.ISSUE_28_APOLOGY, 10) === 1 && msg.modules !== undefined
