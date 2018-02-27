@@ -2,12 +2,13 @@
 const { MongoClient } = require('mongodb');
 const TelegramBot = require('node-telegram-bot-api');
 const dotenv = require('dotenv');
+const htmlstrip = require('htmlstrip-native');
 
 dotenv.load();
 
 // Constants
 const {
-  TOKEN, API_KEY, URL_CALLBACK, INTERVAL, SEND_RESTART_MSG, SEND_NOTICE
+  TOKEN, API_KEY, URL_CALLBACK, INTERVAL, SEND_RESTART_MSG, SEND_NOTICE,
 } = process.env;
 const MONGODB_SERVER = 'mongodb://localhost:27017';
 const DB_NAME = 'NUSIVLEBot';
@@ -26,10 +27,10 @@ function createApi(id, token) {
   });
 }
 
-function fetchAnnouncements(msg, modules, api, force = false) {
+function fetchAnnouncements(msg, modules, api, force = false, firstTime = false) {
   return chatId.findOne({ id: msg.chat.id }).then((r) => {
     let storedA = r.announcements;
-    if (storedA === undefined) {
+    if (!(storedA instanceof Array)) {
       storedA = [];
     }
     const announcements = [];
@@ -49,34 +50,31 @@ function fetchAnnouncements(msg, modules, api, force = false) {
         const uniqueA = a.filter((item, pos, self) => self.indexOf(item) === pos);
         let reply = '';
         uniqueA.forEach((aa) => {
-          if (storedA[i] === undefined) {
+          if (!(storedA[i] instanceof Array)) {
             storedA[i] = [];
           }
           if (storedA[i].filter(aaa => aaa.ID === aa.ID).length === 0) {
-            reply += `- ${aa.Title}\n`;
+            reply = `- ${aa.Title}\n${htmlstrip.html_strip(aa.Description)}`;
+            if (!firstTime) {
+              bot.sendMessage(
+                msg.chat.id,
+                `*${modules[i].CourseCode}: ${modules[i].CourseName}*\n\n${reply}`,
+              );
+            }
             storedA[i].push({ ID: aa.ID });
           }
         });
-        if (force) {
-          if (reply === '') {
-            reply += 'No new announcement';
-          }
+        if (force && reply === '') {
           bot.sendMessage(
             msg.chat.id,
-            `*${modules[i].CourseCode}: ${modules[i].CourseName}*\n\n${reply}`,
-            { parse_mode: 'Markdown' },
-          );
-        } else if (reply !== '') {
-          bot.sendMessage(
-            msg.chat.id,
-            `*${modules[i].CourseCode}: ${modules[i].CourseName}*\n\n${reply}`,
-            { parse_mode: 'Markdown' },
+            `*${modules[i].CourseCode}: ${modules[i].CourseName}*\n\nNo new announcement`,
           );
         }
+        chatId.updateOne({ id: msg.chat.id }, { $set: { announcements: storedA } });
+        console.log("Thenasdasd");
       });
-      chatId.updateOne({ id: msg.chat.id }, { $set: { announcements: storedA } });
-    }).catch(() => {});
-  }).catch(() => {});
+    }).catch((e) => { console.log(e); });
+  }).catch((e) => { console.log(e) });
 }
 
 function recur(msg, modules, api) {
@@ -131,7 +129,7 @@ MongoClient.connect(MONGODB_SERVER).then((client) => {
           { parse_mode: 'Markdown' },
         );
       }
-      if (parseInt(SEND_NOTICE, 10) === 1) { 
+      if (parseInt(SEND_NOTICE, 10) === 1) {
         bot.sendMessage(msg.id, 'There has been some issues with the bot spamming repeated messages. ' +
         'In case this happens to you, please do /delete and /start to re-setup all over');
       }
@@ -216,9 +214,10 @@ MongoClient.connect(MONGODB_SERVER).then((client) => {
         case '/push': {
           const status = args.split(' ')[0];
           if (status === 'on') {
-            chatId.findOne({ id: msg.chat.id }).then((r) => {
+            chatId.findOne({ id: msg.chat.id }).then(async (r) => {
               if (!r.push) {
                 chatId.updateOne({ id: msg.chat.id }, { $set: { push: true } });
+                await fetchAnnouncements(msg, modules, api, false, true);
                 setTimeout(recur(msg, modules, api), parseInt(INTERVAL, 10) * 1000);
                 bot.sendMessage(msg.chat.id, `Set up announcements check every ${INTERVAL} seconds`);
               } else {
