@@ -71,10 +71,9 @@ function fetchAnnouncements(msg, modules, api, force = false, firstTime = false)
           );
         }
         chatId.updateOne({ id: msg.chat.id }, { $set: { announcements: storedA } });
-        console.log("Thenasdasd");
       });
     }).catch((e) => { console.log(e); });
-  }).catch((e) => { console.log(e) });
+  }).catch((e) => { console.log(e); });
 }
 
 function recur(msg, modules, api) {
@@ -130,14 +129,7 @@ MongoClient.connect(MONGODB_SERVER).then((client) => {
         );
       }
       if (parseInt(SEND_NOTICE, 10) === 1) {
-        bot.sendMessage(msg.id, 'There has been some issues with the bot spamming repeated messages. ' +
-        'In case this happens to you, please do /delete and /start to re-setup all over');
-      }
-      // Issue #28 Apology
-      if (parseInt(process.env.ISSUE_28_APOLOGY, 10) === 1 && msg.modules !== undefined
-        && msg.modules.filter(a => a.ID === 'de2f7554-163a-45e3-8619-e5f67f843f9e').length > 0) {
-        bot.sendMessage(msg.id, 'In case you still receive non-stop messages, try /delete then /start');
-        console.log(`#28 apology sent to ${msg}`);
+        bot.sendMessage(msg.id, 'The root cause of the bug regarding bot spamming repeated messages has been traced and fixed. For real this time round. Apologies for all the spam messages');
       }
     });
   }).catch(() => {});
