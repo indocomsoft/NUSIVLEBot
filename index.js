@@ -58,7 +58,7 @@ function fetchAnnouncements(msg, modules, api, force = false, firstTime = false)
             if (!firstTime) {
               bot.sendMessage(
                 msg.chat.id,
-                `*${modules[i].CourseCode}: ${modules[i].CourseName}*\n\n${reply}`,
+                `${modules[i].CourseCode}: ${modules[i].CourseName}\n\n${reply}`,
               );
             }
             storedA[i].push({ ID: aa.ID });
@@ -67,7 +67,7 @@ function fetchAnnouncements(msg, modules, api, force = false, firstTime = false)
         if (force && reply === '') {
           bot.sendMessage(
             msg.chat.id,
-            `*${modules[i].CourseCode}: ${modules[i].CourseName}*\n\nNo new announcement`,
+            `${modules[i].CourseCode}: ${modules[i].CourseName}\n\nNo new announcement`,
           );
         }
         chatId.updateOne({ id: msg.chat.id }, { $set: { announcements: storedA } });
