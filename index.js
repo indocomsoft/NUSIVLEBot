@@ -111,15 +111,20 @@ MongoClient.connect(MONGODB_SERVER).then((client) => {
   chatId.createIndex({ id: 1 }, { unique: true });
   chatId.find({}).toArray().then((r) => {
     r.forEach((msg) => {
+      console.log(`Restoring state for ${msg.id}`);
       if (msg.push === true) {
         createApi(msg.id, msg.ivle_token).then((api) => {
           setTimeout(
             recur({ chat: { id: msg.id } }, msg.modules, api),
             parseInt(INTERVAL, 10) * 1000,
           );
+          console.log(`State restored for ${msg.id}`);
+        }).catch(() => {
+          bot.sendMessage(msg.chat.id, 'Token has expired.');
+          console.log(`Token expired for ${msg.id}`)
+          return start(msg);
         });
       }
-      console.log(`Restoring state for ${msg.id}`);
       if (parseInt(SEND_RESTART_MSG, 10) === 1) {
         bot.sendMessage(
           msg.id, 'Server has been restarted.\n\nWe restored ' +
