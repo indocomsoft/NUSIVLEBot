@@ -111,8 +111,8 @@ MongoClient.connect(MONGODB_SERVER).then((client) => {
   chatId.createIndex({ id: 1 }, { unique: true });
   chatId.find({}).toArray().then((r) => {
     r.forEach((msg) => {
-      console.log(`Restoring state for ${msg.id}`);
       if (msg.push === true) {
+        console.log(`Restoring state for ${msg.id}`);
         createApi(msg.id, msg.ivle_token).then((api) => {
           setTimeout(
             recur({ chat: { id: msg.id } }, msg.modules, api),
