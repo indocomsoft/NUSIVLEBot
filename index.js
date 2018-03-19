@@ -134,7 +134,7 @@ MongoClient.connect(MONGODB_SERVER).then((client) => {
         );
       }
       if (parseInt(SEND_NOTICE, 10) === 1) {
-        bot.sendMessage(msg.id, 'The root cause of the bug regarding bot spamming repeated messages has been traced and fixed. For real this time round. Apologies for all the spam messages');
+        bot.sendMessage(msg.id, 'IVLE API is back up, bot should be working again.');
       }
     });
   }).catch(() => {});
