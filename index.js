@@ -19,6 +19,10 @@ let chatId;
 // My own libraries
 const API = require('./lib/api');
 
+function generateTimeInterval() {
+  return (parseInt(INTERVAL, 10) * Math.floor(Math.random()));
+}
+
 function createApi(id, token) {
   const api = new API(API_KEY);
   return api.validateToken(token).then((response) => {
@@ -81,7 +85,7 @@ function recur(msg, modules, api) {
     chatId.findOne({ id: msg.chat.id }).then((rr) => {
       if (rr.push) {
         fetchAnnouncements(msg, modules, api);
-        setTimeout(recur(msg, modules, api), parseInt(INTERVAL, 10) * 1000);
+        setTimeout(recur(msg, modules, api), generateTimeInterval());
       }
     }).catch(() => {});
   };
@@ -116,12 +120,12 @@ MongoClient.connect(MONGODB_SERVER).then((client) => {
         createApi(msg.id, msg.ivle_token).then((api) => {
           setTimeout(
             recur({ chat: { id: msg.id } }, msg.modules, api),
-            parseInt(INTERVAL, 10) * 1000,
+            generateTimeInterval(),
           );
           console.log(`State restored for ${msg.id}`);
         }).catch(() => {
           bot.sendMessage(msg.chat.id, 'Token has expired.');
-          console.log(`Token expired for ${msg.id}`)
+          console.log(`Token expired for ${msg.id}`);
           return start(msg);
         });
       }
@@ -215,7 +219,7 @@ MongoClient.connect(MONGODB_SERVER).then((client) => {
               if (!r.push) {
                 chatId.updateOne({ id: msg.chat.id }, { $set: { push: true } });
                 await fetchAnnouncements(msg, modules, api, false, true);
-                setTimeout(recur(msg, modules, api), parseInt(INTERVAL, 10) * 1000);
+                setTimeout(recur(msg, modules, api), generateTimeInterval());
                 bot.sendMessage(msg.chat.id, `Set up announcements check every ${INTERVAL} seconds`);
               } else {
                 bot.sendMessage(msg.chat.id, 'Push notification is already on');
