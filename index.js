@@ -20,7 +20,7 @@ let chatId;
 const API = require('./lib/api');
 
 function generateTimeInterval() {
-  const ret = Math.floor(parseInt(INTERVAL, 10) * Math.random());
+  const ret = Math.floor(parseInt(INTERVAL, 10) * Math.random()) * 1000;
   console.log(`Time interval generated: ${ret}`);
   return ret;
 }
