@@ -117,31 +117,33 @@ MongoClient.connect(MONGODB_SERVER).then((client) => {
   chatId.createIndex({ id: 1 }, { unique: true });
   chatId.find({}).toArray().then((r) => {
     r.forEach((msg) => {
-      if (msg.push === true) {
-        console.log(`Restoring state for ${msg.id}`);
-        createApi(msg.id, msg.ivle_token).then((api) => {
-          setTimeout(
-            recur({ chat: { id: msg.id } }, msg.modules, api),
-            generateTimeInterval(),
+      setTimeout(() => {
+        if (msg.push === true) {
+          console.log(`Restoring state for ${msg.id}`);
+          createApi(msg.id, msg.ivle_token).then((api) => {
+            setTimeout(
+              recur({ chat: { id: msg.id } }, msg.modules, api),
+              generateTimeInterval(),
+            );
+            console.log(`State restored for ${msg.id}`);
+          }).catch(() => {
+            bot.sendMessage(msg.chat.id, 'Token has expired.');
+            console.log(`Token expired for ${msg.id}`);
+            return start(msg);
+          });
+        }
+        if (parseInt(SEND_RESTART_MSG, 10) === 1) {
+          bot.sendMessage(
+            msg.id, 'Server has been restarted.\n\nWe restored ' +
+            `your setting of push notification to *${msg.push === true ? 'on' : 'off'}*.\n\n` +
+            'In case that didn\'t work, try doing `/push off` or `/push on` manually.',
+            { parse_mode: 'Markdown' },
           );
-          console.log(`State restored for ${msg.id}`);
-        }).catch(() => {
-          bot.sendMessage(msg.chat.id, 'Token has expired.');
-          console.log(`Token expired for ${msg.id}`);
-          return start(msg);
-        });
-      }
-      if (parseInt(SEND_RESTART_MSG, 10) === 1) {
-        bot.sendMessage(
-          msg.id, 'Server has been restarted.\n\nWe restored ' +
-          `your setting of push notification to *${msg.push === true ? 'on' : 'off'}*.\n\n` +
-          'In case that didn\'t work, try doing `/push off` or `/push on` manually.',
-          { parse_mode: 'Markdown' },
-        );
-      }
-      if (parseInt(SEND_NOTICE, 10) === 1) {
-        bot.sendMessage(msg.id, 'IVLE API is back up, bot should be working again.');
-      }
+        }
+        if (parseInt(SEND_NOTICE, 10) === 1) {
+          bot.sendMessage(msg.id, 'IVLE API is back up, bot should be working again.');
+        }
+      }, Math.floor(Math.random() * 300));
     });
   }).catch(() => {});
 }).catch((err) => {
