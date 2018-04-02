@@ -117,6 +117,8 @@ MongoClient.connect(MONGODB_SERVER).then((client) => {
   chatId.createIndex({ id: 1 }, { unique: true });
   chatId.find({}).toArray().then((r) => {
     r.forEach((msg) => {
+      const interval = Math.floor(Math.random() * 300) * 1000;
+      console.log(`Startup interval generated: ${interval}`);
       setTimeout(() => {
         if (msg.push === true) {
           console.log(`Restoring state for ${msg.id}`);
@@ -143,7 +145,7 @@ MongoClient.connect(MONGODB_SERVER).then((client) => {
         if (parseInt(SEND_NOTICE, 10) === 1) {
           bot.sendMessage(msg.id, 'IVLE API is back up, bot should be working again.');
         }
-      }, Math.floor(Math.random() * 300));
+      }, interval);
     });
   }).catch(() => {});
 }).catch((err) => {
