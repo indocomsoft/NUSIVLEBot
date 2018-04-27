@@ -671,9 +671,9 @@ hosted-git-info@^2.1.4:
   version "2.5.0"
   resolved "https://registry.yarnpkg.com/hosted-git-info/-/hosted-git-info-2.5.0.tgz#6d60e34b3abbc8313062c3b798ef8d901a07af3c"
 
-htmlstrip-native@^0.1.3:
-  version "0.1.3"
-  resolved "https://registry.yarnpkg.com/htmlstrip-native/-/htmlstrip-native-0.1.3.tgz#6e458c54f7e1470924baeaec7add48235ab719e1"
+htmlstrip-native@^0.1.4:
+  version "0.1.4"
+  resolved "https://registry.yarnpkg.com/htmlstrip-native/-/htmlstrip-native-0.1.4.tgz#2e3b7ef5c963b55f3f5f4ceb5d441de45b97f79a"
 
 http-signature@~1.2.0:
   version "1.2.0"

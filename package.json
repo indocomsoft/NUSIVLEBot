@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "dotenv": "^5.0.0",
-    "htmlstrip-native": "^0.1.3",
+    "htmlstrip-native": "^0.1.4",
     "mongodb": "^3.0.2",
     "node-telegram-bot-api": "^0.30.0",
     "request": "^2.83.0",
