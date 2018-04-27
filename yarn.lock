@@ -909,18 +909,18 @@ mkdirp@^0.5.1:
   dependencies:
     minimist "0.0.8"
 
-mongodb-core@3.0.2:
-  version "3.0.2"
-  resolved "https://registry.yarnpkg.com/mongodb-core/-/mongodb-core-3.0.2.tgz#914896092dd45427d9a4f98a7997a0bfb81d163b"
+mongodb-core@3.0.7:
+  version "3.0.7"
+  resolved "https://registry.yarnpkg.com/mongodb-core/-/mongodb-core-3.0.7.tgz#a9941f14883a75768d554cef5fd67756a9cc0f25"
   dependencies:
     bson "~1.0.4"
     require_optional "^1.0.1"
 
-mongodb@^3.0.2:
-  version "3.0.2"
-  resolved "https://registry.yarnpkg.com/mongodb/-/mongodb-3.0.2.tgz#28172302ed4e9388d8091e2cc4618057e6f5debc"
+mongodb@^3.0.7:
+  version "3.0.7"
+  resolved "https://registry.yarnpkg.com/mongodb/-/mongodb-3.0.7.tgz#cfcbaee992d78dabca67177f8f9db9cf13ac3a44"
   dependencies:
-    mongodb-core "3.0.2"
+    mongodb-core "3.0.7"
 
 ms@2.0.0:
   version "2.0.0"
