@@ -246,10 +246,12 @@ MongoClient.connect(MONGODB_SERVER).then((client) => {
           break;
 	case '/about':
 	  bot.sendMessage(msg.chat.id, 'This bot is created by @indocomsoft. Complain to him if I misbehave, or submit an issue to https://github.com/indocomsoft/NUSIVLEBot');
+	  break;
 	case '/stats':
 	  chatId.find({}).toArray()
             .then(r => {
               bot.sendMessage(msg.chat.id, `There are ${r.length} users.`);
+              return r;
             })
             .then(r => r.filter(a => a.push === true))
             .then(r => bot.sendMessage(msg.chat.id, `There are ${r.length} users with push notification on.`));
