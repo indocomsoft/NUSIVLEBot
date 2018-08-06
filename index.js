@@ -143,7 +143,7 @@ MongoClient.connect(MONGODB_SERVER).then((client) => {
           );
         }
         if (parseInt(SEND_NOTICE, 10) === 1) {
-          bot.sendMessage(msg.id, 'IVLE API is back up, bot should be working again.');
+          bot.sendMessage(msg.id, 'New semester is upon us. Get ready by resetting your profile. Send /delete and then /start');
         }
       }, interval);
     });
