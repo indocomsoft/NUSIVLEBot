@@ -143,7 +143,7 @@ MongoClient.connect(MONGODB_SERVER).then((client) => {
           );
         }
         if (parseInt(SEND_NOTICE, 10) === 1) {
-          bot.sendMessage(msg.id, 'New semester is upon us. Get ready by resetting your profile. Send /delete and then /start');
+          bot.sendMessage(msg.id, 'Reset your profile if you are allocated new modules in CORS. Send /delete and then /start');
         }
       }, interval);
     });
